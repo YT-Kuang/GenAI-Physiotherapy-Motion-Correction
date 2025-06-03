@@ -213,23 +213,18 @@ def compute_knee_angle_rmse(correct_arr, patient_arr, kp_order):
 
     return knee_angle_rmse, hip_abd_rmse
 
-def save_rmse_to_dataframe(coordinate_rmses, keypoints_of_interest, knee_rmse, hip_abd_rmse, filename="rmse_results.csv"):
-    """
-    Save RMSE results into a CSV file.
-    """
+def upload_dataframe_to_snowflake(coordinate_rmses, 
+                                  keypoints_of_interest, 
+                                  knee_rmse, hip_abd_rmse,
+                                  exercise_type,
+                                  table_name="RMSE_RESULTS"):
+
     data = {
         "keypoint_name": keypoints_of_interest + ["KNEE_ANGLE", "HIP_ABDUCTION_ANGLE"],
         "RMSE": coordinate_rmses + [knee_rmse, hip_abd_rmse]
     }
     df = pd.DataFrame(data)
-    # df.to_csv(filename, index=False)
-    # print(f"[result] RMSE results saved to {filename}")
-    return df
 
-def upload_dataframe_to_snowflake(df, table_name="RMSE_RESULTS"):
-    """
-    Upload the RMSE CSV file to Snowflake.
-    """
     conn = connect_snowflake()
     cursor = conn.cursor()
 
@@ -237,18 +232,19 @@ def upload_dataframe_to_snowflake(df, table_name="RMSE_RESULTS"):
     create_table_query = f'''
     CREATE TABLE IF NOT EXISTS {table_name} (
         keypoint_name STRING,
-        RMSE FLOAT
+        RMSE FLOAT,
+        TYPE STRING
     );
     '''
     cursor.execute(create_table_query)
 
     # Insert values into Snowflake
+    insert_query = f"""
+    INSERT INTO {table_name} (keypoint_name, RMSE, TYPE) 
+    VALUES (%s, %s, %s)
+    """
     for _, row in df.iterrows():
-        insert_query = f"""
-        INSERT INTO {table_name} (keypoint_name, RMSE) 
-        VALUES ('{row['keypoint_name']}', {row['RMSE']});
-        """
-        cursor.execute(insert_query)
+        cursor.execute(insert_query, (row['keypoint_name'], row['RMSE'], exercise_type))
 
     conn.commit()
     cursor.close()

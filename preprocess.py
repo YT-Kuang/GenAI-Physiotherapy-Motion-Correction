@@ -14,7 +14,6 @@ s3_client = connect_s3()
 # Configure your S3 bucket names here
 PATIENT_VIDEO_BUCKET = os.getenv("PATIENT_VIDEO_BUCKET")
 PATIENT_KEYPOINTS_BUCKET = os.getenv("PATIENT_KEYPOINTS_BUCKET")
-
 # # Local temporary folder for videos and keypoints
 # local_video_dir = "./temp_videos"
 # os.makedirs(local_video_dir, exist_ok=True)
@@ -128,6 +127,8 @@ def process_videos(output_video_path):
     - Upload keypoints JSON to S3
     - Upload processed video to S3
     """
+    start_time = time.time()
+    
     try:
         response = s3_client.list_objects_v2(Bucket=PATIENT_VIDEO_BUCKET)
         if "Contents" not in response:
@@ -140,8 +141,6 @@ def process_videos(output_video_path):
     except Exception as e:
         print("[preprocess] Error listing S3 objects:", e)
         return
-
-    start_time = time.time()
 
     # for video_file in video_files:
     #     local_video_path = os.path.join(local_video_dir, os.path.basename(video_file))

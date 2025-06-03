@@ -1,7 +1,13 @@
 import numpy as np
 import mediapipe as mp
 from fastdtw import fastdtw
+import tempfile
+import boto3
+import json
+import time
 from scipy.spatial.distance import euclidean
+
+s3_client = boto3.client('s3')
 
 def align_skeleton_to_standard(keypoints_data):
     """
@@ -211,3 +217,50 @@ def dtw_time_warping(source_array, target_array):
                     aligned_source[i] = aligned_source[j]
 
     return aligned_source
+
+def normalized_process(correct_video_keypoints, 
+                       patient_video_keypoints,
+                       bucket_name,
+                       skeleton_data_s3_path,
+                       keypoints_order_s3_path):
+
+    start_time = time.time()
+
+    # 1) Align each skeleton to a standard local frame
+    aligned_correct = align_skeleton_to_standard(correct_video_keypoints)
+    aligned_patient = align_skeleton_to_standard(patient_video_keypoints)
+
+    # 2) Apply a single global rotation so that the "correct" orientation is closer to the patient's
+    R_global = single_global_rotation(aligned_correct, aligned_patient)
+    aligned_correct = apply_global_rotation_to_dict(aligned_correct, R_global)
+
+    # 3) Convert each dictionary into a NumPy array
+    correct_arr, correct_frames, kp_order = dictionary_to_frame_array(aligned_correct)
+    patient_arr, patient_frames, _ = dictionary_to_frame_array(aligned_patient, kp_order)
+
+    # 4) Time warp (DTW) the patient array to match the correct array length
+    patient_aligned_arr = dtw_time_warping(patient_arr, correct_arr)
+
+    # Step 5: Save skeleton arrays as JSON
+    keypoints_data = {
+        "correct": correct_arr.tolist(),
+        "patient_aligned": patient_aligned_arr.tolist()
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False) as temp_skeleton:
+        json.dump(keypoints_data, temp_skeleton)
+        temp_skeleton.flush()
+        s3_client.upload_file(temp_skeleton.name, bucket_name, skeleton_data_s3_path)
+    print(f"[normalized] Skeleton keypoint arrays uploaded to s3://{bucket_name}/{skeleton_data_s3_path}")
+
+    # Step 6: Save kp_order as a Python-style list string
+    with tempfile.NamedTemporaryFile(mode="w+", suffix=".txt", delete=False) as temp_kp:
+        temp_kp.write(str(kp_order))  # this writes it like a Python list, not JSON
+        temp_kp.flush()
+        s3_client.upload_file(temp_kp.name, bucket_name, keypoints_order_s3_path)
+    print(f"[normalized] Keypoint order uploaded to s3://{bucket_name}/{keypoints_order_s3_path}")
+
+    end_time = time.time()
+    print(f"[normalized] Total normalization time: {end_time - start_time:.2f} seconds.")
+    
+    return correct_arr, patient_aligned_arr, kp_order

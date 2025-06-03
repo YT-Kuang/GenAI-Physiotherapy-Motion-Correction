@@ -1,28 +1,21 @@
 import os
-import json
 import time
 import openai
 import numpy as np
 from dotenv import load_dotenv
 
 # Import from own modules
-from utils import (
-    connect_s3, 
-    connect_snowflake
-)
 from preprocess import process_videos
-from normalized import (
-    align_skeleton_to_standard,
-    single_global_rotation,
-    apply_global_rotation_to_dict,
-    dictionary_to_frame_array,
-    dtw_time_warping
+from normalized import normalized_process
+from load_data import (
+    fetch_keypoints_from_snowflake,
+    load_patient_keypoints_from_s3,
+    load_overlay_skeleton_animation_url
 )
 from results import (
     draw_overlay_skeleton_animation,
     compute_3d_coordinate_rmse_for_keypoints,
-    compute_knee_angle_rmse, 
-    save_rmse_to_dataframe, 
+    compute_knee_angle_rmse,
     upload_dataframe_to_snowflake
 )
 from llm import (
@@ -35,82 +28,17 @@ load_dotenv()
 
 # Load AWS S3 credentials
 PATIENT_KEYPOINTS_BUCKET = os.getenv("PATIENT_KEYPOINTS_BUCKET")
-OVERLAY_GIF = os.getenv("OVERLAY_ANIMATION_BUCKET")
+OVERLAY_BUCKET = os.getenv("RESULT_BUCKET")
+GEN_REPORT_BUCKET = os.getenv("RESULT_BUCKET")
+NORMALIZED_BUCKET = os.getenv("RESULT_BUCKET")
 
 # Load OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def fetch_keypoints_from_snowflake(video_name, table_name):
-    """
-    Fetch all keypoint data for a specific video from Snowflake. Returns:
-      {
-         frame_idx: {
-             keypoint_name: np.array([x,y,z], dtype=float32),
-             ...
-         },
-         ...
-      }
-    """
-    conn = connect_snowflake()
-    cursor = conn.cursor()
-    
-    query = f"""
-    SELECT frame_number, keypoint_name, x, y, z
-    FROM {table_name}
-    WHERE video_name = '{video_name}';
-    """
-    cursor.execute(query)
-    data = cursor.fetchall()
-    
-    keypoints_data = {}
-    for row in data:
-        frame_number, keypoint_name, x, y, z = row
-        if frame_number not in keypoints_data:
-            keypoints_data[frame_number] = {}
-        keypoints_data[frame_number][keypoint_name] = np.array([x, y, z], dtype=np.float32)
-    
-    cursor.close()
-    conn.close()
-    
-    return keypoints_data
-
-def load_patient_keypoints_from_s3():
-    """
-    Load and process patient_keypoints.json from S3.
-    Converts string values to np.array(dtype=np.float32).
-    """
-    s3_client = connect_s3()
-
-    try:
-        response = s3_client.list_objects_v2(Bucket=PATIENT_KEYPOINTS_BUCKET)
-        print("[main] S3 Connection Successful!")
-        if "Contents" not in response:
-            print("[main] No keypoints files found in the S3 bucket.")
-            return
-
-        json_files = [obj["Key"] for obj in response.get("Contents", []) if obj["Key"].endswith(".json")]
-        print(f"[main] Found {len(json_files)} keypoints files.")
-
-    except Exception as e:
-        print("[main] Error:", e)
-        return
-
-    for json_file in json_files:
-        obj = s3_client.get_object(Bucket=PATIENT_KEYPOINTS_BUCKET, Key=json_file)
-        patient_data_raw = json.load(obj["Body"])
-
-    # Convert list to dictionary with integer frame indexes
-    patient_keypoint_data = {
-        int(frame_idx): {
-            kp_name: np.array([float(kp_values["x"]), float(kp_values["y"]), float(kp_values["z"])], dtype=np.float32)
-            for kp_name, kp_values in keypoints.items()
-        }
-        for frame_idx, keypoints in enumerate(patient_data_raw)  # Enumerate to convert list index to dict key
-    }
-
-    return patient_keypoint_data
-
 def main():
+
+    total_start_time = time.time()
+
     # 1) Process videos from S3
     process_videos(output_video_path="lower_extremity/output_patient_video.mp4")
 
@@ -121,30 +49,23 @@ def main():
     )
     patient_video_keypoints = load_patient_keypoints_from_s3()
 
-    # 3) Align each skeleton to a standard local frame
-    aligned_correct = align_skeleton_to_standard(correct_video_keypoints)
-    aligned_patient = align_skeleton_to_standard(patient_video_keypoints)
-
-    # 4) Apply a single global rotation so that the "correct" orientation is closer to the patient's
-    R_global = single_global_rotation(aligned_correct, aligned_patient)
-    aligned_correct = apply_global_rotation_to_dict(aligned_correct, R_global)
-
-    # 5) Convert each dictionary into a NumPy array
-    correct_arr, correct_frames, kp_order = dictionary_to_frame_array(aligned_correct)
-    patient_arr, patient_frames, _ = dictionary_to_frame_array(aligned_patient, kp_order)
-
-    # 6) Time warp (DTW) the patient array to match the correct array length
-    patient_aligned_arr = dtw_time_warping(patient_arr, correct_arr)
-
-    start_time = time.time()
-
+    skeleton_data_s3_key = "lower_extremity_keypoint/corr_patientaligned_keypoint.json"
+    keypoints_order_s3_key = "keypoint_order.txt"
+    correct_arr, patient_aligned_arr, kp_order = normalized_process(correct_video_keypoints, 
+                                                                    patient_video_keypoints, 
+                                                                    NORMALIZED_BUCKET,
+                                                                    skeleton_data_s3_key,
+                                                                    keypoints_order_s3_key)
+    
+    result_start_time = time.time()
     # 7) Visualize both skeletons in one 3D animation (optional)
+    s3_object_key, overlay_skeleton_animation_url = load_overlay_skeleton_animation_url()
     draw_overlay_skeleton_animation(
         arr_correct=correct_arr,
         arr_patient=patient_aligned_arr,
         keypoints_order=kp_order,
-        bucket_name = OVERLAY_GIF,
-        s3_save_path = "lower_extremity/normalized_overlay_skeleton_animation_newVer.gif"
+        bucket_name = OVERLAY_BUCKET,
+        s3_save_path = s3_object_key
     )
 
     # 8) Compute numeric metrics
@@ -168,21 +89,49 @@ def main():
     # print(f"[main] Hip Abduction Angle RMSE: {hip_abd_rmse:.4f}")
 
         # Convert RMSE results to DataFrame
-    rmse_df = save_rmse_to_dataframe(coordinate_rmses, keypoints_of_interest, knee_rmse, hip_abd_rmse)
+    # rmse_df = save_rmse_to_dataframe(coordinate_rmses, keypoints_of_interest, knee_rmse, hip_abd_rmse)
     
         # Upload the DataFrame to Snowflake
-    upload_dataframe_to_snowflake(rmse_df)
+    upload_dataframe_to_snowflake(coordinate_rmses, 
+                                  keypoints_of_interest, 
+                                  knee_rmse, hip_abd_rmse,
+                                  exercise_type="LEG",
+                                  table_name="RMSE_RESULTS_0603")
+    result_end_time = time.time()
 
+    llm_start_time = time.time()
     # 9) LLM
     rmse_metrics = fetch_rmse_metrics_from_snowflake()
     patient_info = {"age": 35, "height": 165, "weight": 60}
-    report = generate_physio_report(patient_info, rmse_metrics)
+    report_output = generate_physio_report(patient_info, 
+                                        rmse_metrics, 
+                                        overlay_skeleton_animation_url, 
+                                        GEN_REPORT_BUCKET, 
+                                        "lower_extremity_gen_report/physio_feedback.json")
+    
+    # Unpack
+    # physio_feedback_dict = report_output["report_dict"]
+    physio_feedback_json_str = report_output["report_json"]
+    # report_s3_url = report_output["report_s3_path"]
+
+    # gen_report = json.dumps(report, indent=2)
+    llm_end_time = time.time()
 
     print("\n[main] Generated Physiotherapy Report:\n")
-    print(json.dumps(report, indent=2))
+    print(physio_feedback_json_str)
 
-    end_time = time.time()
-    print(f"[main] Total time: {end_time - start_time:.2f} seconds.")
+    # file_name = 'gen_report.json'
+
+    # # Write the JSON data to a file
+    # with open(file_name, 'w') as json_file:
+    #     json_file.write(gen_report)
+    # print(f"[main] Report saved to {file_name}")
+
+    total_end_time = time.time()
+
+    print(f"[main] Skeleton drawing / RMSE caculation time: {result_end_time - result_start_time:.2f} seconds.")
+    print(f"[main] Feedback generation time: {llm_end_time - llm_start_time:.2f} seconds.")
+    print(f"[main] Total time: {total_end_time - total_start_time:.2f} seconds.")
 
 
 if __name__ == "__main__":

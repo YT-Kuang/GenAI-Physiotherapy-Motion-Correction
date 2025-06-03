@@ -1,9 +1,12 @@
 from openai import OpenAI
 import pandas as pd
 import json
+import tempfile
+import boto3
 from utils import connect_snowflake
 
 client = OpenAI()
+s3_client = boto3.client('s3')
 
 def fetch_rmse_metrics_from_snowflake(table_name="RMSE_RESULTS"):
     """
@@ -24,7 +27,7 @@ def fetch_rmse_metrics_from_snowflake(table_name="RMSE_RESULTS"):
 
     return rmse_metrics
 
-def generate_physio_report(patient_info, rmse_metrics):
+def generate_physio_report(patient_info, rmse_metrics, gif_s3_url, bucket_name, report_s3_path):
     """
     Generates a physiotherapy feedback report using OpenAI's GPT-4 with Chain-of-Thought prompting.
     
@@ -75,7 +78,7 @@ def generate_physio_report(patient_info, rmse_metrics):
         },
         {
             "type": "input_image",
-            "image_url": "https://physiopro-overlay.s3.us-east-1.amazonaws.com/lower_extremity/normalized_overlay_skeleton_animation_newVer.gif"
+            "image_url": gif_s3_url
         }
     ]
 
@@ -127,5 +130,21 @@ def generate_physio_report(patient_info, rmse_metrics):
     )
     
     # Parse the structured output
-    physio_feedback = json.loads(response.output_text)
-    return physio_feedback
+    report = json.loads(response.output_text)
+    physio_feedback = json.dumps(report, indent=2)
+
+    # Save the feedback JSON temporarily
+    with tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False) as temp_json:
+        json.dump(physio_feedback, temp_json, indent=2)
+        temp_json.flush()
+        temp_path = temp_json.name
+
+    # Upload to S3
+    s3_client.upload_file(temp_path, bucket_name, report_s3_path)
+    print(f"[LLM] Physiotherapy Generated report uploaded to s3://{bucket_name}/{report_s3_path}")
+    
+    return {
+        "report_dict": report,
+        "report_json": physio_feedback,
+        "report_s3_path": f"s3://{bucket_name}/{report_s3_path}"
+    }
