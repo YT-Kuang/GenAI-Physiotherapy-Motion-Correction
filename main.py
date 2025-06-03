@@ -5,20 +5,20 @@ import numpy as np
 from dotenv import load_dotenv
 
 # Import from own modules
-from preprocess import process_videos
-from normalized import normalized_process
-from load_data import (
+from c1_preprocess import process_videos
+from c2_normalized import normalized_process
+from c3_load_data import (
     fetch_keypoints_from_snowflake,
     load_patient_keypoints_from_s3,
     load_overlay_skeleton_animation_url
 )
-from results import (
+from c3_results import (
     draw_overlay_skeleton_animation,
     compute_3d_coordinate_rmse_for_keypoints,
     compute_knee_angle_rmse,
     upload_dataframe_to_snowflake
 )
-from llm import (
+from c4_llm import (
     fetch_rmse_metrics_from_snowflake, 
     generate_physio_report
 )
@@ -35,7 +35,7 @@ NORMALIZED_BUCKET = os.getenv("RESULT_BUCKET")
 # Load OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def main():
+def main(age, weight, height, exercise_type):
 
     total_start_time = time.time()
 
@@ -95,14 +95,14 @@ def main():
     upload_dataframe_to_snowflake(coordinate_rmses, 
                                   keypoints_of_interest, 
                                   knee_rmse, hip_abd_rmse,
-                                  exercise_type="LEG",
+                                  exercise_type,
                                   table_name="RMSE_RESULTS_0603")
     result_end_time = time.time()
 
     llm_start_time = time.time()
     # 9) LLM
     rmse_metrics = fetch_rmse_metrics_from_snowflake()
-    patient_info = {"age": 35, "height": 165, "weight": 60}
+    patient_info = {"age": age, "height": height, "weight": weight}
     report_output = generate_physio_report(patient_info, 
                                         rmse_metrics, 
                                         overlay_skeleton_animation_url, 
@@ -111,6 +111,7 @@ def main():
     
     # Unpack
     # physio_feedback_dict = report_output["report_dict"]
+    llm_prompt = report_output["prompt"]
     physio_feedback_json_str = report_output["report_json"]
     # report_s3_url = report_output["report_s3_path"]
 
@@ -133,6 +134,7 @@ def main():
     print(f"[main] Feedback generation time: {llm_end_time - llm_start_time:.2f} seconds.")
     print(f"[main] Total time: {total_end_time - total_start_time:.2f} seconds.")
 
+    return llm_prompt, physio_feedback_json_str
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

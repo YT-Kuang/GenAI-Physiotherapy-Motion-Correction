@@ -3,7 +3,7 @@ import pandas as pd
 import json
 import tempfile
 import boto3
-from utils import connect_snowflake
+from c0_utils import connect_snowflake
 
 client = OpenAI()
 s3_client = boto3.client('s3')
@@ -144,6 +144,7 @@ def generate_physio_report(patient_info, rmse_metrics, gif_s3_url, bucket_name, 
     print(f"[LLM] Physiotherapy Generated report uploaded to s3://{bucket_name}/{report_s3_path}")
     
     return {
+        "prompt": prompt,
         "report_dict": report,
         "report_json": physio_feedback,
         "report_s3_path": f"s3://{bucket_name}/{report_s3_path}"
