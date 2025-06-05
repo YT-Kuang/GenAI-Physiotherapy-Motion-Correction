@@ -1,10 +1,12 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-# from mpl_toolkits.mplot3d import Axes3D
 import tempfile
+import subprocess
 import matplotlib.animation as animation
 from matplotlib.animation import PillowWriter
+from dotenv import load_dotenv
+import os
 from utils import (
     connect_s3, 
     connect_snowflake
@@ -213,11 +215,10 @@ def compute_knee_angle_rmse(correct_arr, patient_arr, kp_order):
 
     return knee_angle_rmse, hip_abd_rmse
 
-def upload_dataframe_to_snowflake(coordinate_rmses, 
+def upload_rsme_to_snowflake(coordinate_rmses, 
                                   keypoints_of_interest, 
-                                  knee_rmse, hip_abd_rmse,
-                                  exercise_type,
-                                  table_name="RMSE_RESULTS"):
+                                  knee_rmse, hip_abd_rmse, 
+                                  table_name="stg_rmse_results"):
 
     data = {
         "keypoint_name": keypoints_of_interest + ["KNEE_ANGLE", "HIP_ABDUCTION_ANGLE"],
@@ -228,26 +229,44 @@ def upload_dataframe_to_snowflake(coordinate_rmses,
     conn = connect_snowflake()
     cursor = conn.cursor()
 
+    # Load environment variables
+    load_dotenv()
+
+    database = os.getenv("SNOWFLAKE_DATABASE")
+    schema = os.getenv("SNOWFLAKE_SCHEMA")
+
     # Create table if not exists
+    qualified_table_name = f"{database}.{schema}.{table_name}"
     create_table_query = f'''
-    CREATE TABLE IF NOT EXISTS {table_name} (
+    CREATE TABLE IF NOT EXISTS {qualified_table_name} (
         keypoint_name STRING,
-        RMSE FLOAT,
-        TYPE STRING
+        RMSE FLOAT
     );
     '''
     cursor.execute(create_table_query)
 
     # Insert values into Snowflake
     insert_query = f"""
-    INSERT INTO {table_name} (keypoint_name, RMSE, TYPE) 
-    VALUES (%s, %s, %s)
+    INSERT INTO {qualified_table_name} (keypoint_name, RMSE) 
+    VALUES (%s, %s)
     """
     for _, row in df.iterrows():
-        cursor.execute(insert_query, (row['keypoint_name'], row['RMSE'], exercise_type))
+        cursor.execute(insert_query, (row['keypoint_name'], row['RMSE']))
 
     conn.commit()
     cursor.close()
     conn.close()
-    print(f"[result] RMSE results imported to Snowflake table {table_name}")
+    print(f"[result] RMSE results imported to Snowflake table {qualified_table_name}")
+
+    # Run DBT transformation after data upload
+    try:
+        print("[info] Running DBT transformations...")
+        subprocess.run(
+            ["dbt", "run"],
+            check=True,
+            cwd="./dbt_project"
+        )
+        print("[success] DBT run completed.")
+    except subprocess.CalledProcessError as e:
+        print(f"[error] DBT run failed: {e}")
 

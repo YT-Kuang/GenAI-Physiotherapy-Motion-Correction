@@ -7,7 +7,8 @@ from datetime import datetime
 import concurrent.futures
 # from sqlalchemy import create_engine
 from utils import (connect_s3, 
-                   connect_snowflake)
+                   connect_snowflake
+                   )
 from main import main
 
 # Load environment variables
@@ -34,6 +35,14 @@ PATIENT_VIDEO_BUCKET = os.getenv("PATIENT_VIDEO_BUCKET")
 #     st.error(f"Failed to connect to Snowflake: {e}")
 #     st.stop()
 
+# # Connect to Snowflake for raw cursor operations
+# def connect_snowflake():
+#     try:
+#         return snowflake.connector.connect(**SNOWFLAKE_CONFIG)
+#     except Exception as e:
+#         st.error(f"Failed to connect to Snowflake: {e}")
+#         st.stop()
+
 # Create uploads directory
 UPLOAD_DIR = "./lower_extremity"
 if not os.path.exists(UPLOAD_DIR):
@@ -57,22 +66,21 @@ st.markdown("### 🧑‍⚕️ Enter Your Personal Information")
 
 body_area = st.selectbox(
     "Select Target Area of Exercise:",
-    options=["Lower Body (Legs, Hips, Knees)", "Upper Body (Shoulders, Arms)", "Core (Abdomen, Back)"]
+    options=["Head", "Lower Body (Legs, Hips, Knees)", "Upper Body (Shoulders, Arms)", "Core (Abdomen, Back)"]
 )
 # Internally map to standardized type for storage
 area_map = {
-    "Lower Body (Legs, Hips, Knees)": "LEG",
-    "Upper Body (Shoulders, Arms)": "SHOULDERS",
-    "Core (Abdomen, Back)": "CORE"
+    "Head": "head", 
+    "Lower Body (Legs, Hips, Knees)": "lower_body",
+    "Upper Body (Shoulders, Arms)": "upper_body",
+    "Core (Abdomen, Back)": "core_body"
 }
 exercise_type = area_map[body_area]
-# exercise_type = re.sub(r'\W+', '_', exercise_type.upper()) 
 age = st.number_input("Age (years):", min_value=10, max_value=120, value=30)
 weight = st.number_input("Weight (kg):", min_value=20, max_value=200, value=70)
 height = st.number_input("Height (cm):", min_value=50, max_value=250, value=170)
 
 # Display user details
-# st.write(f"**Your Details:** Age: {age} years, Weight: {weight} kg, Height: {height} cm")
 st.write(f"**Your Details:** Age: {age} years, Weight: {weight} kg, Height: {height} cm, Exercise: {exercise_type}")
 
 
@@ -97,14 +105,14 @@ if video_file:
         s3_video_path = f"lower_extremity/{video_filename}"
         s3_client.upload_file(video_path, PATIENT_VIDEO_BUCKET, s3_video_path)
         st.success(f"Video uploaded to s3://{PATIENT_VIDEO_BUCKET}/{video_path}")
-        os.remove(video_path)  # Cleanup
+        # os.remove(video_path)  # Remove local file
 
     except Exception as e:
         st.error(f"Failed to save video to S3: {e}")
 
     with st.spinner("Analyzing motion, please wait... this may take over a minute."):
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(main, age, weight, height, exercise_type)
+            future = executor.submit(main, age, weight, height)
             llm_prompt, physio_feedback_json_str = future.result()
 
    # Fetch RMSE data
@@ -113,8 +121,8 @@ if video_file:
         cur = conn.cursor()
         query = f"""
         SELECT * 
-        FROM RMSE_RESULTS_0603
-        WHERE TYPE = '{exercise_type}'
+        FROM rmse_results_final
+        WHERE TYPE IN ('{exercise_type}', 'metric')
         """
         cur.execute(query)
         df = pd.DataFrame.from_records(
@@ -125,7 +133,7 @@ if video_file:
         # df = pd.read_sql(query, engine)
 
         if df.empty:
-           st.warning(f"No RMSE data found in RMSE_RESULTS_0603 table.")
+           st.warning(f"No RMSE data found.")
     except Exception as e:
         st.error(f"Error fetching RMSE data: {e}")
         df = pd.DataFrame()
@@ -138,24 +146,11 @@ if video_file:
         else:
             st.warning("No RMSE data to display.")
 
-    # show_rmse = st.checkbox("RMSE Values for Keypoints fetched from Snowflake:")
-    # if show_rmse and not df.empty:
-    #     st.write("**RMSE Values for Keypoints:**")
-    #     st.dataframe(df.rename(columns={"keypoint_name": "Keypoint", "rmse": "RMSE", "TYPE": "Exercise_Type"}))
-    # elif show_rmse and df.empty:
-    #     st.warning("No RMSE data to display.")
-
     # LLM Feedback with Prompt Checkbox
     st.markdown("### 🧠 AI Feedback")
     if not df.empty:
         with st.expander("**Generated LLM Prompt:**"):
             st.code(llm_prompt)
-
-        # # Checkbox to show LLM prompt
-        # show_prompt = st.checkbox("Show LLM Prompt")
-        # if show_prompt:
-        #     st.write("**Generated LLM Prompt:**")
-        #     st.code(llm_prompt)
 
         st.write("**Generated Motion Feedback:**")
         st.success(physio_feedback_json_str)

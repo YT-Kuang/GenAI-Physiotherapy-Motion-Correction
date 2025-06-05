@@ -1,0 +1,17 @@
+boto3
+opencv-python
+mediapipe
+snowflake-connector-python
+snowflake-sqlalchemy
+python-dotenv
+numpy
+pandas
+scipy
+fastdtw
+matplotlib
+openai
+SQLAlchemy
+httpx
+streamlit
+dbt-core 
+dbt-snowflake

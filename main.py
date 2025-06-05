@@ -5,20 +5,20 @@ import numpy as np
 from dotenv import load_dotenv
 
 # Import from own modules
-from c1_preprocess import process_videos
-from c2_normalized import normalized_process
-from c3_load_data import (
+from preprocess import process_videos
+from normalized import normalized_process
+from load_data import (
     fetch_keypoints_from_snowflake,
     load_patient_keypoints_from_s3,
     load_overlay_skeleton_animation_url
 )
-from c3_results import (
+from results import (
     draw_overlay_skeleton_animation,
     compute_3d_coordinate_rmse_for_keypoints,
     compute_knee_angle_rmse,
-    upload_dataframe_to_snowflake
+    upload_rsme_to_snowflake
 )
-from c4_llm import (
+from llm import (
     fetch_rmse_metrics_from_snowflake, 
     generate_physio_report
 )
@@ -35,7 +35,7 @@ NORMALIZED_BUCKET = os.getenv("RESULT_BUCKET")
 # Load OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def main(age, weight, height, exercise_type):
+def main(age, weight, height):
 
     total_start_time = time.time()
 
@@ -70,13 +70,13 @@ def main(age, weight, height, exercise_type):
 
     # 8) Compute numeric metrics
         # 3D coordinate RMSE for certain keypoints
-    keypoints_of_interest = [
-        "LEFT_HIP", "RIGHT_HIP", "LEFT_KNEE", "RIGHT_KNEE",
-        "LEFT_ANKLE", "RIGHT_ANKLE", 'LEFT_HEEL', 'RIGHT_HEEL', 
-        "LEFT_FOOT_INDEX", "RIGHT_FOOT_INDEX"
-    ]
+    # keypoints_of_interest = [
+    #     "LEFT_HIP", "RIGHT_HIP", "LEFT_KNEE", "RIGHT_KNEE",
+    #     "LEFT_ANKLE", "RIGHT_ANKLE", 'LEFT_HEEL', 'RIGHT_HEEL', 
+    #     "LEFT_FOOT_INDEX", "RIGHT_FOOT_INDEX"
+    # ]
     coordinate_rmses = compute_3d_coordinate_rmse_for_keypoints(
-        correct_arr, patient_aligned_arr, keypoints_of_interest, kp_order
+        correct_arr, patient_aligned_arr, kp_order, kp_order
     )
     
     # print("\n[main] 3D RMSE for selected keypoints:")
@@ -92,22 +92,21 @@ def main(age, weight, height, exercise_type):
     # rmse_df = save_rmse_to_dataframe(coordinate_rmses, keypoints_of_interest, knee_rmse, hip_abd_rmse)
     
         # Upload the DataFrame to Snowflake
-    upload_dataframe_to_snowflake(coordinate_rmses, 
-                                  keypoints_of_interest, 
-                                  knee_rmse, hip_abd_rmse,
-                                  exercise_type,
-                                  table_name="RMSE_RESULTS_0603")
+    upload_rsme_to_snowflake(coordinate_rmses,
+                             kp_order,
+                             knee_rmse, hip_abd_rmse
+                            )
     result_end_time = time.time()
 
     llm_start_time = time.time()
     # 9) LLM
     rmse_metrics = fetch_rmse_metrics_from_snowflake()
     patient_info = {"age": age, "height": height, "weight": weight}
-    report_output = generate_physio_report(patient_info, 
-                                        rmse_metrics, 
-                                        overlay_skeleton_animation_url, 
-                                        GEN_REPORT_BUCKET, 
-                                        "lower_extremity_gen_report/physio_feedback.json")
+    report_output = generate_physio_report(patient_info,
+                                           rmse_metrics,
+                                           overlay_skeleton_animation_url,
+                                           GEN_REPORT_BUCKET,
+                                           "lower_extremity_gen_report/physio_feedback.json")
     
     # Unpack
     # physio_feedback_dict = report_output["report_dict"]
