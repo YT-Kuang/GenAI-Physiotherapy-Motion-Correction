@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw
-    database: PHYSIOPRO_DB      # optional if already defined
-    schema: PHYSIOPRO_SCHEMA          # where Python writes to
+    database: PHYSIOPRO_DB  # optional if already defined
+    schema: PHYSIOPRO_SCHEMA
     tables:
       - name: stg_rmse_results
