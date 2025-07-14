@@ -137,27 +137,27 @@ Follow these steps to set up and run the project:
 
 <table>
   <tr>
-    <td style="padding-right: 20px;">
+    <td>
        <img width="300" alt="report1" src="https://github.com/user-attachments/assets/49c661dd-7e0d-472b-a5fc-1905ea10c47f" />
     </td>
-    <td style="padding-left: 20px;">
+    <td>
        <img width="300" alt="report2" src="https://github.com/user-attachments/assets/2877462e-127d-494f-8d3f-40cf652f1ab4" />
     </td>
   </tr>
 </table>
 
 ## References
-[1] Pose Estimation (MediaPipe Pose) Dill, S., Rösch, A., Rohr, M., Güney, G., De Witte, L., Schwartz, E., & Hoog Antink, C. (2023). Accuracy Evaluation of 3D Pose
+1. Pose Estimation (MediaPipe Pose) Dill, S., Rösch, A., Rohr, M., Güney, G., De Witte, L., Schwartz, E., & Hoog Antink, C. (2023). Accuracy Evaluation of 3D Pose
 Estimation with MediaPipe Pose for Physical Exercises. Current Directions in Biomedical Engineering, 9(1), 563-566. [https://doi.org/10.1515/cdbme-2023-1141]
-[2] Timely alignment (Dynamic Time Warping, DTW) Switonski, A., Josinski, H., & Wojciechowski, K. (2019). Dynamic time warping in classification and selection
+2. Timely alignment (Dynamic Time Warping, DTW) Switonski, A., Josinski, H., & Wojciechowski, K. (2019). Dynamic time warping in classification and selection
 of motion capture data. Multidimensional Systems and Signal Processing, 30, 1437–1468. [https://doi.org/10.1007/s11045-018-0611-3]
-[3] LLM-based Feedback Feng, Yao, et al. "ChatPose: Chatting about 3D Human Pose. " Max Planck Institute for Intelligent Systems, ETH Zürich, Meshcapade,
+3. LLM-based Feedback Feng, Yao, et al. "ChatPose: Chatting about 3D Human Pose. " Max Planck Institute for Intelligent Systems, ETH Zürich, Meshcapade,
 Tsinghua University, 2024. [https://arxiv.org/pdf/2311.18836]
-[4] Kim, J.-W., Choi, J.-Y., Ha, E.-J., & Choi, J.-H. (2023). Human Pose Estimation Using MediaPipe Pose and Optimization Method Based on a Humanoid Model.
+4. Kim, J.-W., Choi, J.-Y., Ha, E.-J., & Choi, J.-H. (2023). Human Pose Estimation Using MediaPipe Pose and Optimization Method Based on a Humanoid Model.
 Applied Sciences, 13(4), 2700. [https://doi.org/10.3390/app13042700]
-[5] Zhou, F., & De la Torre, F. (2012). Generalized time warping for multi-modal alignment of human motion. 2012 IEEE Conference on Computer Vision and
+5. Zhou, F., & De la Torre, F. (2012). Generalized time warping for multi-modal alignment of human motion. 2012 IEEE Conference on Computer Vision and
 Pattern Recognition (CVPR), 1282-1289. [https://doi.org/10.1109/CVPR.2012.6247812]
-[6] Tevet, G., Gordon, A., & Bermano, A. (2023). Human Motion Diffusion Model. arXiv preprint. [https://arxiv.org/pdf/2209.14916]
-[7] Stent, M. (n.d.). Dynamic Time Warping. Medium. [https://medium.com/@markstent/dynamic-time-warping-a8c5027defb6]
-[8] Dynamic Time Warping in Motion Data Analysis. Blog [https://blog.csdn.net/c9Yv2cf9I06K2A9E/article/details/122904252]
+6. Tevet, G., Gordon, A., & Bermano, A. (2023). Human Motion Diffusion Model. arXiv preprint. [https://arxiv.org/pdf/2209.14916]
+7. Stent, M. (n.d.). Dynamic Time Warping. Medium. [https://medium.com/@markstent/dynamic-time-warping-a8c5027defb6]
+8. Dynamic Time Warping in Motion Data Analysis. Blog [https://blog.csdn.net/c9Yv2cf9I06K2A9E/article/details/122904252]
 
