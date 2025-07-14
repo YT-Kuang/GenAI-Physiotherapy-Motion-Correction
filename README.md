@@ -177,11 +177,4 @@ Estimation with MediaPipe Pose for Physical Exercises. Current Directions in Bio
 of motion capture data. Multidimensional Systems and Signal Processing, 30, 1437–1468. [https://doi.org/10.1007/s11045-018-0611-3]
 3. LLM-based Feedback Feng, Yao, et al. "ChatPose: Chatting about 3D Human Pose. " Max Planck Institute for Intelligent Systems, ETH Zürich, Meshcapade,
 Tsinghua University, 2024. [https://arxiv.org/pdf/2311.18836]
-4. Kim, J.-W., Choi, J.-Y., Ha, E.-J., & Choi, J.-H. (2023). Human Pose Estimation Using MediaPipe Pose and Optimization Method Based on a Humanoid Model.
-Applied Sciences, 13(4), 2700. [https://doi.org/10.3390/app13042700]
-5. Zhou, F., & De la Torre, F. (2012). Generalized time warping for multi-modal alignment of human motion. 2012 IEEE Conference on Computer Vision and
-Pattern Recognition (CVPR), 1282-1289. [https://doi.org/10.1109/CVPR.2012.6247812]
-6. Tevet, G., Gordon, A., & Bermano, A. (2023). Human Motion Diffusion Model. arXiv preprint. [https://arxiv.org/pdf/2209.14916]
-7. Stent, M. (n.d.). Dynamic Time Warping. Medium. [https://medium.com/@markstent/dynamic-time-warping-a8c5027defb6]
-8. Dynamic Time Warping in Motion Data Analysis. Blog [https://blog.csdn.net/c9Yv2cf9I06K2A9E/article/details/122904252]
 
