@@ -148,27 +148,27 @@ Follow these steps to set up and run the project:
 
 **Key Findings**:
 
-- Highest Error Areas: Right foot movement showed significant deviations (RIGHT_FOOT_INDEX: 0.336, RIGHT_HEEL: 0.323, RIGHT_ANKLE: 0.291)
-- Hip Abduction Issues: 30.39° RMSE indicating substantial hip movement deviation
-- Knee Alignment Problems: 19.86° RMSE suggesting alignment issues during exercise execution
-- Left Side Compensation: Elevated RMSE values in left ankle and heel indicating compensatory movement patterns
+- **Highest Error Areas**: Right foot movement showed significant deviations (RIGHT_FOOT_INDEX: 0.336, RIGHT_HEEL: 0.323, RIGHT_ANKLE: 0.291)
+- **Hip Abduction Issues**: 30.39° RMSE indicating substantial hip movement deviation
+- **Knee Alignment Problems**: 19.86° RMSE suggesting alignment issues during exercise execution
+- **Left Side Compensation**: Elevated RMSE values in left ankle and heel indicating compensatory movement patterns
 
 **AI-Generated Personalized Feedback**:
 
 Our system provides step-by-step corrective recommendations:
 
-1. Right Foot Stabilization: Focus on toe raises and lateral foot movements to improve stability
-2. Hip Stabilization: Incorporate clamshell exercises, lateral leg raises, and glute bridges for better hip control
-3. Knee Alignment: Implement wall sits and proper squatting techniques to correct alignment
-4. Left Side Balance: Use single-leg stands and proprioceptive exercises to reduce compensation patterns
-5. Overall Coordination: Develop balanced strength training for symmetrical muscle development
+1. **Right Foot Stabilization**: Focus on toe raises and lateral foot movements to improve stability
+2. **Hip Stabilization**: Incorporate clamshell exercises, lateral leg raises, and glute bridges for better hip control
+3. **Knee Alignment**: Implement wall sits and proper squatting techniques to correct alignment
+4. **Left Side Balance**: Use single-leg stands and proprioceptive exercises to reduce compensation patterns
+5. **Overall Coordination**: Develop balanced strength training for symmetrical muscle development
 
 This analysis framework enables healthcare providers to deliver precision-based rehabilitation through quantitative movement assessment. Clinicians can identify specific deficiencies using objective RMSE measurements rather than subjective evaluations, allowing for targeted, evidence-based recommendations tailored to each patient's unique movement profile. The system facilitates real-time progress tracking and protocol adjustments, ultimately delivering personalized care plans that optimize recovery outcomes through scientific precision.
 
 ##  Future Optimizations
-- Performance Enhancement: Optimize visual overlay rendering and RMSE calculations to reduce 58% computational overhead
-- Adaptive Learning: Implement reinforcement learning for real-time personalized motion correction guidance
-- Advanced Computing: Leverage spiking neural networks with neuromorphic computing for enhanced energy efficiency and temporal processing
+- **Performance Enhancement**: Optimize visual overlay rendering and RMSE calculations to reduce 58% computational overhead
+- **Adaptive Learning**: Implement reinforcement learning for real-time personalized motion correction guidance
+- **Advanced Computing**: Leverage spiking neural networks with neuromorphic computing for enhanced energy efficiency and temporal processing
 
 ## References
 1. Pose Estimation (MediaPipe Pose) Dill, S., Rösch, A., Rohr, M., Güney, G., De Witte, L., Schwartz, E., & Hoog Antink, C. (2023). Accuracy Evaluation of 3D Pose
