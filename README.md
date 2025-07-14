@@ -60,7 +60,7 @@ Our AI-powered physiotherapy analysis follows a comprehensive 5-step pipeline:
 
 **5. Personalized Feedback Generation**
 
-- Snowflake Cortex** and OpenAI API analyze overlay images and RMSE metrics using Chain-of-Thought (CoT) prompting
+- Snowflake Cortex and OpenAI API analyze overlay images and RMSE metrics using Chain-of-Thought (CoT) prompting
 - Generates personalized, text-based rehabilitation feedback
 - Delivers actionable insights for movement improvement
 
