@@ -1,7 +1,7 @@
 # PhysioPro - GenAI for Physiotherapy Motion Correction
 
 **PhysioPro** is an AI-powered physiotherapy motion analysis system that provides real-time movement correction and personalized rehabilitation feedback for at-home recovery, aiming to enhance patient engagement and improve recovery outcomes.
-This project focuses on the **Fire Hydrant** exercise, utilizing video datasets from [Cornell University](https://www.cornell.edu/video/fire-hydrant-exercise) and [YouTube](https://www.youtube.com/watch?v=La3xYT8MGks) for model training and validation.
+This project focuses on the **Fire Hydrant** exercise, utilizing video datasets from [Cornell University](https://www.cornell.edu/video/fire-hydrant-exercise) and [YouTube](https://www.youtube.com/watch?v=La3xYT8MGks) as reference movement and patient movement respectively.
 
 ## What It Does
 
