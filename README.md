@@ -121,7 +121,7 @@ Follow these steps to set up and run the project:
 ## Results & Analysis
 
 | Keypoint Name  | RMSE | Type |
-| ------------- | ------------- |
+| ------------- | ------------- | ------------- |
 | LEFT_HIP  | 0.04442004859447480  | lower_body  |
 | RIGHT_HIP  | 0.04442005231976510  | lower_body  |
 | LEFT_KNEE  | 0.1529528647661210  | lower_body  |
