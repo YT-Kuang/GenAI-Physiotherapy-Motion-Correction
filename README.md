@@ -32,7 +32,7 @@ PhysioPro analyzes patient movements during rehabilitation exercises and provide
 
 Our AI-powered physiotherapy analysis follows a comprehensive 5-step pipeline:
 
-<img width="800" alt="7374_project_architecture" src="https://github.com/user-attachments/assets/98652a53-3b53-42e4-adb8-65509c163cfb" />
+<img width="2472" height="1048" alt="7374_project_architecture" src="https://github.com/user-attachments/assets/edd32268-8bfa-4d0d-8cfc-e5d33d8a7749" />
 
 **1. Video Upload & Storage**
 
